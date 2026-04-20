@@ -8,6 +8,7 @@ use crate::storedata::*;
 use crate::commitscheme::*;
 use crate::managecsv::*;
 use crate::compute_eps;
+use std::time::Instant;
 
 // Verification of the correct usage of privacy budget.
 pub fn hospital_privacy_budget_verification(name_data: &String, row_index: usize, path_eps: &PathBuf, path_set: &PathBuf){
@@ -85,7 +86,9 @@ pub fn hospital_opening_on_original_data(path_set: &PathBuf, path_opening_key: &
     let _ = store_proofopen(&proof_open, &path_proof_opening);
 	
     // Verify the extraction of the proof
-	
+    let extracted_proof_open = extract_proofopen(&path_proof_opening);
+    assert!(extracted_proof_open == proof_open, "The proof is not correctly stored.\n");
+    	
     print!("The commitment was opened on original data.\n");
 }
 
@@ -155,13 +158,18 @@ pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize,
     let proof_openldp1 = openldp.1;
     let _ = store_proofopenldp(&proof_openldp1, &path_proof_opening_ldp);
 	
-    // Verify that the proof of opening can be correctly extracted	
+    // Verify that the proof of opening can be correctly extracted
+    let extracted_proof_openldp = extract_proofopenldp(&path_proof_opening_ldp);
+    assert!(extracted_proof_openldp == proof_openldp1, "The proof is not correctly stored");
+    	
     print!("Patient: {}; data: {}\n", row_index, name_data);
     print!("The commitment is opened on anonymized data.\n");
 }
 
 // Phase executed by the hospital to verify the used privacy budget, the proof of commitment, the signature and opening on the real data.
 pub fn hospital_phase(metadata: &Metadata, path_data: &String, folder_eps: &String, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_proof_commitment: &String, folder_proof_open: &String, folder_signature: &String, path_doctor_public_key: &PathBuf){
+
+    let start_hosp_verification_phase = Instant::now();
 
     // Parse metadata
     let name_data = &metadata.name;
@@ -210,10 +218,14 @@ pub fn hospital_phase(metadata: &Metadata, path_data: &String, folder_eps: &Stri
 	// Verify the proof of opening
 	hospital_verify_opening_on_original_data(column_index, row_index, b, p, &path_data, &path_set, &path_commitment, &path_proof_open);		
     } 
+    let duration_hosp_verification_phase = start_hosp_verification_phase.elapsed();
+    print!("Hospital Verification Phase took {:?} for {} data \n", duration_hosp_verification_phase, number_row);
 }
 
 // Phase executed by the hospital to anonymize the data and generation of a proof of anonymization.
 pub fn hospital_anonymization(metadata: &Metadata, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_seed: &String, folder_proof_openldp: &String, path_ano_data: &String){
+	
+    let start_hosp_anonymization_phase = Instant::now();
 	
     // Parse metadata
     let name_data = &metadata.name;
@@ -247,4 +259,6 @@ pub fn hospital_anonymization(metadata: &Metadata, folder_set: &String, folder_o
 	// Open the commitment on the anonymized data
 	hospital_opening_on_anonymized_data(name_data, row_index, b, p, &path_set, &path_opening_key, &path_commitment, &path_public_seed, &path_proof_openldp, &path_ano_data);	
     }
+    let duration_hosp_anonymization_phase = start_hosp_anonymization_phase.elapsed();
+    print!("Hospital Anonymization Phase took {:?} for {} data \n", duration_hosp_anonymization_phase, number_row);
 }

@@ -18,7 +18,7 @@ fn main(){
     println!("\nDoctor Phase\n");
 	
     // Pretreatment of the data.
-    /*let path_data = format!("doctor_space/data/heart_failure_clinical_records_dataset.csv"); // Define the path to access to the patient data.
+    let path_data = format!("doctor_space/data/heart_failure_clinical_records_dataset.csv"); // Define the path to access to the patient data.
     let name_data = "serum_creatinine".to_string();
     let column_index = 7;
     let number_row = 299;
@@ -26,8 +26,8 @@ fn main(){
     let precision = 2u32; // the precision correspond to the number of values after the commas if b == true.
     let max_data = compute_max(&path_data, column_index, number_row, b, precision); // The max can also be fixed in advance in accordance to the maximum of value that can be taken by the data.
 println!("Maximum value of the discretized data: {}", max_data);
-    let l2 = compute_l2(max_data); // l2 correspond to the ceiling of the base-2 logarithm of max_data. l2 >= log_2(max_data).*/
-    let path_data = format!("doctor_space/data/heart_failure_clinical_records_dataset.csv"); // Define the path to access to the patient data.
+    let l2 = compute_l2(max_data); // l2 correspond to the ceiling of the base-2 logarithm of max_data. l2 >= log_2(max_data).
+    /*let path_data = format!("doctor_space/data/heart_failure_clinical_records_dataset.csv"); // Define the path to access to the patient data.
     let name_data = "age".to_string();
     let column_index = 0;
     let number_row = 299;
@@ -35,7 +35,7 @@ println!("Maximum value of the discretized data: {}", max_data);
     let precision = 0u32; // the precision correspond to the number of values after the commas if b == true.
     let max_data = compute_max(&path_data, column_index, number_row, b, precision); // The max can also be fixed in advance in accordance to the maximum of value that can be taken by the data.
 println!("Maximum value of the discretized data: {}", max_data);
-    let l2 = compute_l2(max_data); // l2 correspond to the ceiling of the base-2 logarithm of max_data. l2 >= log_2(max_data).
+    let l2 = compute_l2(max_data); // l2 correspond to the ceiling of the base-2 logarithm of max_data. l2 >= log_2(max_data).*/
 	
     let metadata = Metadata{name: name_data.clone(), col_index: column_index, nb_row: number_row, max_discret_data: max_data, fl: b, pr: precision, l2: l2};
 	

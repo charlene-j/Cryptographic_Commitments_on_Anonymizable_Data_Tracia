@@ -7,6 +7,7 @@ use crate::storedata::*;
 use crate::commitscheme::*;
 use crate::managecsv::*;
 use crate::compute_eps;
+use std::time::Instant;
 
 // Verification of the correct usage of privacy budget.
 pub fn researcher_privacy_budget_verification(name_data: &String, row_index: usize, path_eps: &PathBuf, path_set: &PathBuf){
@@ -124,6 +125,8 @@ pub fn researcher_verify_opening_on_anonymized_data(column_index: usize, row_ind
 
 // Phase executed by the Researcher to verify the signature, the proof of commitment and the proof of correct anonymization given the anonymized data.
 pub fn researcher_verification(metadata: &Metadata, folder_eps: &String, folder_set: &String, folder_commitment: &String, folder_proof_commitment: &String, folder_seed: &String, folder_proof_openldp: &String, folder_signature: &String, path_doctor_public_key: &PathBuf, path_ano_data: &String){
+
+    let start_res_verification_phase = Instant::now();
 	
     // Parse metadata
     let name_data = &metadata.name;
@@ -166,5 +169,7 @@ pub fn researcher_verification(metadata: &Metadata, folder_eps: &String, folder_
 		
 	// Verify the proof of opening with LDP
 	researcher_verify_opening_on_anonymized_data(0, row_index, b, p, &path_set, &path_commitment, &path_seed, &path_proof_openldp, &path_ano_data);
-    }	
+    }
+    let duration_res_verification_phase = start_res_verification_phase.elapsed();
+    print!("Researcher Verification Phase took {:?} for {} data \n", duration_res_verification_phase, number_row);	
 }

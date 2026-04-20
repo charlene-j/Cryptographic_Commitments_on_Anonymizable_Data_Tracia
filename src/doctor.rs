@@ -8,6 +8,7 @@ use crate::storedata::*;
 use crate::commitscheme::*;
 use crate::privacybudget::*;
 use crate::managecsv::*;
+use std::time::Instant;
 
 // Generation and Storage of public and private key of the Doctor.
 pub fn doctor_keys_generation(path_doctor_public_key: &PathBuf, path_doctor_private_key: &PathBuf){
@@ -158,6 +159,8 @@ pub fn doctor_signature_generation_and_storage(path_set: &PathBuf, path_commitme
 // Phase executed by the Doctor.
 pub fn doctor_phase(metadata: &Metadata, max_eps: Vec<f32>, path_data: &String, folder_eps: &String, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_proof_commitment: &String, folder_signature: &String, path_doctor_public_key: &PathBuf, path_doctor_private_key: &PathBuf){
 
+    let start_doc_phase = Instant::now();
+
     // Parse metadata
     let name_data = &metadata.name;
     let column_index = metadata.col_index;
@@ -199,5 +202,7 @@ pub fn doctor_phase(metadata: &Metadata, max_eps: Vec<f32>, path_data: &String, 
 	doctor_commit_generation_and_storage(column_index, row_index, l1, l2, b, p, &path_data, &path_set, &path_opening_key, &path_commitment, &path_proof_commitment);
 	doctor_signature_generation_and_storage(&path_set, &path_commitment, &path_signature, &path_doctor_public_key, &path_doctor_private_key);	
     }
+    let duration_doc_phase = start_doc_phase.elapsed();
+    print!("Doctor Phase took {:?} for {} data \n", duration_doc_phase, number_row);
 }
 	
