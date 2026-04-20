@@ -6,6 +6,25 @@ use curve25519_dalek::{scalar::Scalar, RistrettoPoint, ristretto::CompressedRist
 use crate::usefulfunction::*;
 use crate::usefulstruct::*;
 
+//Write a float in a file.
+pub fn store_float(float: f32, name_file: &PathBuf) -> std::io::Result<()>{
+    let mut file = File::options().write(true).truncate(true).create(true).open(name_file)?;
+    file.write_all(&float.to_le_bytes())?;
+    
+    return Ok(())
+}
+
+// Extract a float located in a file.
+pub fn extract_float(name_file: &PathBuf) -> f32{
+    let mut file = File::open(name_file).expect("Impossible to open the file");
+
+    let mut buffer = [0u8; std::mem::size_of::<f32>()];
+
+    file.read_exact(&mut buffer).expect("Impossible to read the file");
+
+    return f32::from_le_bytes(buffer)
+}
+
 // Write a type Vec<usize> in a file.
 pub fn store_seed(vec_usize: Vec<Vec<usize>>, name_file: &PathBuf) -> io::Result<()>{
 
@@ -22,7 +41,7 @@ pub fn store_seed(vec_usize: Vec<Vec<usize>>, name_file: &PathBuf) -> io::Result
 // Extract the type Vec<usize> located in a file.
 pub fn extract_seed(l1: usize, l2: usize, name_file: &PathBuf) -> Vec<Vec<usize>>{
 
-	let mut buffer = Vec::new();
+    let mut buffer = Vec::new();
     let file = File::open(name_file); 
     let _= file.expect("Impossible to open the file").read_to_end(&mut buffer); 
     let mut vec_seed_1: Vec<usize> = Vec::new();
@@ -34,7 +53,7 @@ pub fn extract_seed(l1: usize, l2: usize, name_file: &PathBuf) -> Vec<Vec<usize>
     	vec_seed_2.push(buffer[i].into());
     }
     
-	return vec![vec_seed_1, vec_seed_2];
+    return vec![vec_seed_1, vec_seed_2];
 }
 
 // Write RistrettoPoint in a file:
