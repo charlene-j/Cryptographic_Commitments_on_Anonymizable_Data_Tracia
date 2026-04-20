@@ -32,7 +32,11 @@ pub fn doctor_keys_generation(path_doctor_public_key: &PathBuf, path_doctor_priv
     let extracted_private_key = extract_scalar(&path_doctor_private_key);
     assert!(extracted_private_key == doctor_private_key, "The private key in the file in not equal to the real private key.");
     
-    print!("The public/private keys are correctly generated and stored.\n");
+    let meta_privk = fs::metadata(&path_doctor_private_key).expect("Error");
+    let meta_pubk = fs::metadata(&path_doctor_public_key).expect("Error");
+    let privk_size = meta_privk.len();
+    let pubk_size = meta_pubk.len();
+    print!("The private/public keys are correctly generated and stored ({}/{} bytes).\n", privk_size, pubk_size);
 }
 
 // Computation of the parameter l1 according to the privacy budget.
@@ -65,7 +69,9 @@ pub fn doctor_setup_generation_and_storage(l1: u32, l2: u32, path_set: &PathBuf)
     let extracted_set = extract_setup(&path_set);
     assert!(extracted_set == set, "The setup in the file in not equal to the real setup."); 
     
-    print!("Setup is generated and stored.\n");	
+    let meta = fs::metadata(&path_set).expect("Error");
+    let set_size = meta.len();
+    print!("The setup is generated and stored ({} bytes).\n", set_size);
 }
 
 // Generation and Storage of the opening key, the commitment and the proof of correct commitment.
@@ -106,6 +112,10 @@ pub fn doctor_commit_generation_and_storage(column_index: usize, row_index: usiz
     // Verify that we can extract the opening key from the file
     let extracted_k = extract_scalar(&path_opening_key);
     assert!(extracted_k == k, "The opening key in the file in not equal to the real opening key."); 
+    
+    let meta_opk = fs::metadata(&path_opening_key).expect("Error");
+    let opk_size = meta_opk.len();
+    print!("The opening key is generated and stored ({} bytes).\n", opk_size);
     	
     // Store the commitment in a file
     let _ = store_commit(&c, &path_commitment); 
@@ -113,15 +123,21 @@ pub fn doctor_commit_generation_and_storage(column_index: usize, row_index: usiz
     // Verify that we can extract the commitment from the file
     let extracted_c = extract_commit(l1.try_into().unwrap(), l2.try_into().unwrap(), &path_commitment); // Collect the stored commitment 
     assert!(extracted_c == c, "The commitment in the file in not equal to the real commitment."); // Verify that the real commitment and the collected commitment are the same
+    
+    let meta_com = fs::metadata(&path_commitment).expect("Error");
+    let com_size = meta_com.len();
+    print!("The commitment is generated and stored ({} bytes).\n", com_size);
     	
     // Store the proof of commitment
-    let _ = store_proofcommit(&p_com, l1.try_into().unwrap(), l2.try_into().unwrap(), &path_proof_commitment); 
+    let _ = store_proofcommit(&p_com, l1.try_into().unwrap(), l2.try_into().unwrap(), &path_proof_commitment);
+    
+    let meta_pcom = fs::metadata(&path_proof_commitment).expect("Error");
+    let pcom_size = meta_pcom.len();
+    print!("The proof of commitment is generated and stored ({} bytes).\n", pcom_size); 
  
     // Verify that we can extract the proof of commitment from the file
     let extracted_pcom = extract_proofcommit(l1.try_into().unwrap(), l2.try_into().unwrap(), &path_proof_commitment); // Collect the stored proof of commitment
     assert!(extracted_pcom == p_com, "The proof of commitment in the file in not equal to the real proof of commitment."); // Verify that the real proof of commitment and the collected proof of commitment are the same
-    
-    print!("The commitment is generated and stored.\n");
 }   	
 
 // Generation and Storage of the signature of the commitment.
@@ -153,7 +169,9 @@ pub fn doctor_signature_generation_and_storage(path_set: &PathBuf, path_commitme
     let extracted_sig = extract_sig(&path_signature); // Collect the stored proof of commitment
     assert!(extracted_sig == sig, "The signature in the file in not equal to the real signature."); // Verify that the real signature and the collected signature are the same
     
-    print!("The signature is created and stored.\n");
+    let meta = fs::metadata(&path_signature).expect("Error");
+    let sig_size = meta.len();
+    print!("The signature is created and stored ({} bytes).\n", sig_size);
 }
 
 // Phase executed by the Doctor.

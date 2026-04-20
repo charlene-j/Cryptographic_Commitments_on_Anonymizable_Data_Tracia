@@ -88,8 +88,10 @@ pub fn hospital_opening_on_original_data(path_set: &PathBuf, path_opening_key: &
     // Verify the extraction of the proof
     let extracted_proof_open = extract_proofopen(&path_proof_opening);
     assert!(extracted_proof_open == proof_open, "The proof is not correctly stored.\n");
-    	
-    print!("The commitment was opened on original data.\n");
+    
+    let meta_pop = fs::metadata(&path_proof_opening).expect("Error");
+    let pop_size = meta_pop.len();
+    print!("The proof of opening is generated and stored ({} bytes).\n", pop_size);
 }
 
 // Verification of the proof of opening given the real data.
@@ -125,6 +127,8 @@ pub fn hospital_verify_opening_on_original_data(column_index: usize, row_index: 
 
 // Opening of the commitment on the anonymized data and generation of the proof of correct anonymization.
 pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize, b: bool, p:u32, path_set: &PathBuf, path_opening_key: &PathBuf, path_commitment: &PathBuf, path_public_seed: &PathBuf, path_proof_opening_ldp: &PathBuf, path_ano_data: &String){
+
+    print!("Patient: {}; data: {}\n", row_index, name_data);
 	
     let mut csrng = OsRng; // Random Number Generator based on the OS System (Crypto-Secure RNG)
 	
@@ -161,9 +165,10 @@ pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize,
     // Verify that the proof of opening can be correctly extracted
     let extracted_proof_openldp = extract_proofopenldp(&path_proof_opening_ldp);
     assert!(extracted_proof_openldp == proof_openldp1, "The proof is not correctly stored");
-    	
-    print!("Patient: {}; data: {}\n", row_index, name_data);
-    print!("The commitment is opened on anonymized data.\n");
+    
+    let meta_popldp = fs::metadata(&path_proof_opening_ldp).expect("Error");
+    let popldp_size = meta_popldp.len();
+    print!("The proof of opening with LPD is generated and stored ({} bytes).\n", popldp_size);
 }
 
 // Phase executed by the hospital to verify the used privacy budget, the proof of commitment, the signature and opening on the real data.
