@@ -6,23 +6,51 @@ use sha2::{Sha512,Digest};
 use curve25519_dalek::{scalar::Scalar, RistrettoPoint, traits::Identity, constants::RISTRETTO_BASEPOINT_POINT, constants::RISTRETTO_BASEPOINT_TABLE, ristretto::CompressedRistretto};
 use csv::Reader;
 use crate::import_data_u32;
-use crate::import_data_f32;
+use crate::import_data_f64;
+
+// Compute the number of digit after the comma of a value
+pub fn decimal_places(value: &str) -> usize{
+    match value.find('.') {
+        Some(position) => value.len() - position - 1,
+        None => 0,
+    }
+}
+
+// Return the precision of data of a column
+pub fn get_precision(path_file: &String, column_index: usize) -> u32{
+    let mut reader = csv::Reader::from_path(&path_file).expect("Cannot open the document");
+
+    let mut precision: u32 = 0;
+
+    for result in reader.records() {
+        let record = result.expect("Cannot read the record");
+
+        let value = &record[column_index];
+
+        let decimals = decimal_places(value) as u32;
+
+        if decimals > precision {
+            precision = decimals;
+        }
+    }
+    return precision
+}
 
 // Compute the maximum value 
-pub fn compute_max(path_file: &String, column_index: usize, number_row: usize, b: bool, p: u32) -> u32{
+pub fn compute_max(path_file: &String, column_index: usize, number_row: usize, p: u32) -> u32{
 
 	let rdr = Reader::from_path(&path_file);
 	let mut max = 0u32;
 	let mut data: u32;
 	for row_index in 1..=number_row {
-		if b == false{
+		if p == 0{
 			data = import_data_u32(&path_file, column_index, row_index).expect("Impossible to import the data");
 			if max < data {
 				max = data;
 			}
 		}
 		else { 
-			data = import_data_f32(&path_file, column_index, row_index, p).expect("Impossible to import the data");
+			data = import_data_f64(&path_file, column_index, row_index, p).expect("Impossible to import the data");
 			if max < data {
 				max = data;
 			}
