@@ -11,18 +11,18 @@ use crate::compute_eps;
 use std::time::Instant;
 
 // Verification of the correct usage of privacy budget.
-pub fn hospital_privacy_budget_verification(name_data: &String, row_index: usize, path_eps: &PathBuf, path_set: &PathBuf){
+pub fn hospital_privacy_budget_verification(name_data: &String, column_index: usize, row_index: usize, path_eps: &String, path_set: &PathBuf){
 
     // Collect the data transmitted by the doctor and stored by the hospital
     let set = extract_setup(&path_set); // Collect the stored setup
-    let extracted_eps = extract_float(&path_eps);
+    let extracted_eps = get_cell(&path_eps, column_index, row_index-1).unwrap();
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
 		
-    let eps = compute_eps(l2.try_into().unwrap(),l1.try_into().unwrap());
+    let eps = compute_eps(l_2.try_into().unwrap(),l_1.try_into().unwrap());
 
-    print!("Patient: {}; data: {}\n", name_data, row_index);
+    print!("Patient: {}; data: {}\n", row_index, name_data);
     assert!(extracted_eps == eps.into(), "The privacy budget is not correct\n");
     print!("The privacy budget is correct.\n");
 }
@@ -33,11 +33,11 @@ pub fn hospital_proof_commitment_verification(path_set: &PathBuf, path_commitmen
     // Collect the data transmitted by the doctor and stored by the hospital
     let set = extract_setup(&path_set); // Collect the stored setup
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
 	
-    let commitment = extract_commit(l1, l2, &path_commitment); // Collect the stored commitment
-    let proof_commitment = extract_proofcommit(l1, l2, path_proof_commitment); // Collect the stored proof of commitment
+    let commitment = extract_commit(l_1, l_2, &path_commitment); // Collect the stored commitment
+    let proof_commitment = extract_proofcommit(l_1, l_2, path_proof_commitment); // Collect the stored proof of commitment
     
     // Verify the proof
     let verify = ver_commit(set, commitment, proof_commitment);
@@ -51,12 +51,12 @@ pub fn hospital_signature_verification(path_set: &PathBuf, path_commitment: &Pat
     // Collect the data transmitted by the Doctor and stored by the hospital
     let set = extract_setup(&path_set); // Collect the stored setup
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
     
     let doctor_public_key = extract_ristretto(&path_doctor_public_key); // Collect the stored public key
     let signature = extract_sig(&path_signature); // Collect the stored signature
-    let commitment = extract_commit(l1, l2, &path_commitment); // Collect the stored commitment
+    let commitment = extract_commit(l_1, l_2, &path_commitment); // Collect the stored commitment
 	
     // Verify the signature with the public key of the doctor:   	    	
     let verify = ver(commitment.clone(),RISTRETTO_BASEPOINT_POINT,doctor_public_key,signature);
@@ -72,11 +72,11 @@ pub fn hospital_opening_on_original_data(path_set: &PathBuf, path_opening_key: &
     // Collect the data transmitted by the Doctor and stored by the hospital
     let set = extract_setup(&path_set); // Collect the stored setup
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
 	
     let opening_key = extract_scalar(&path_opening_key); // Collect the stored opening key
-    let commitment = extract_commit(l1, l2, &path_commitment); // Collect the stored commitment
+    let commitment = extract_commit(l_1, l_2, &path_commitment); // Collect the stored commitment
 	
     // Open the commitment
     let open = open(&mut csrng, set.clone(), opening_key, commitment.clone());
@@ -95,28 +95,28 @@ pub fn hospital_opening_on_original_data(path_set: &PathBuf, path_opening_key: &
 }
 
 // Verification of the proof of opening given the real data.
-pub fn hospital_verify_opening_on_original_data(column_index: usize, row_index: usize, b: bool, p: u32, path_data: &String, path_set: &PathBuf, path_commitment: &PathBuf, path_proof_opening: &PathBuf){
+pub fn hospital_verify_opening_on_original_data(column_index: usize, row_index: usize, pr: u32, path_data: &String, path_set: &PathBuf, path_commitment: &PathBuf, path_proof_opening: &PathBuf){
 
     // Collect the data needed
     let set = extract_setup(&path_set); // Collect the stored setup
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
 	
-    let commitment = extract_commit(l1, l2, &path_commitment); // Collect the stored commitment
+    let commitment = extract_commit(l_1, l_2, &path_commitment); // Collect the stored commitment
     let proof_open = extract_proofopen(path_proof_opening); // Collect the stored proof of opening
 	
     // Import the data
     let data: u32;
-    if b == false{
-	data = import_data_u32(&path_data, column_index, row_index).expect("Impossible to import the data.");
+    if pr == 0{
+	   data = import_data_u32(&path_data, column_index, row_index).expect("Impossible to import the data.");
     }
     else{ 
-	data = import_data_f32(&path_data, column_index, row_index, p).expect("Impossible to import the data.");
+	   data = import_data_f64(&path_data, column_index, row_index, pr).expect("Impossible to import the data.");
     }
 	
     // Convert the data in binary 
-    let bin_data = convert_u32_in_binary(data, l2.try_into().unwrap());
+    let bin_data = convert_u32_in_binary(data, l_2.try_into().unwrap());
     
     // Verify the proof
     let verify = ver_open(set, commitment, bin_data, proof_open);
@@ -126,7 +126,7 @@ pub fn hospital_verify_opening_on_original_data(column_index: usize, row_index: 
 }
 
 // Opening of the commitment on the anonymized data and generation of the proof of correct anonymization.
-pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize, b: bool, p:u32, path_set: &PathBuf, path_opening_key: &PathBuf, path_commitment: &PathBuf, path_public_seed: &PathBuf, path_proof_opening_ldp: &PathBuf, path_ano_data: &String){
+pub fn hospital_opening_on_anonymized_data(name_data: &String, column_index: usize, row_index: usize, pr: u32, path_set: &PathBuf, path_opening_key: &PathBuf, path_commitment: &PathBuf, path_public_seed: &PathBuf, path_proof_opening_ldp: &PathBuf, path_ano_data: &String){
 
     print!("Patient: {}; data: {}\n", row_index, name_data);
 	
@@ -135,12 +135,12 @@ pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize,
     // Collect the data transmitted by the Doctor and stored by the hospital
     let set = extract_setup(&path_set); // Collect the stored setup
    
-    let l1 = set.l1;
-    let l2 = set.l2;
+    let l_1 = set.l1;
+    let l_2 = set.l2;
 	
     let opening_key = extract_scalar(&path_opening_key); // Collect the stored opening key
-    let commitment = extract_commit(l1, l2, &path_commitment); // Collect the stored commitment
-    let public_seed = extract_seed(l1, l2, &path_public_seed); // Collect the stored public seed
+    let commitment = extract_commit(l_1, l_2, &path_commitment); // Collect the stored commitment
+    let public_seed = extract_seed(l_1, l_2, &path_public_seed); // Collect the stored public seed
 		
     // Open the commitment
     let openldp = openldp(&mut csrng, set, opening_key, commitment, public_seed);
@@ -148,14 +148,16 @@ pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize,
 	
     // Store the anonymized data
     let ano_data_u32: u32;
-    let ano_data_f32: f32;
-    if b == false{
-	ano_data_u32 = convert_binary_in_u32(ano_data, l2.try_into().unwrap());
-	let _= write_csv_file(&path_ano_data, &ano_data_u32.to_string());
+    let ano_data_f64: f64;
+    if pr == 0{
+	    ano_data_u32 = convert_binary_in_u32(ano_data, l_2.try_into().unwrap());
+	    let _= write_csv_file(&path_ano_data, column_index, row_index, &ano_data_u32.to_string());
     }
     else{
-	ano_data_f32 = (convert_binary_in_u32(ano_data, l2.try_into().unwrap()) as f32)/ 10f32.powi(p as i32);
-	let _= write_csv_file(&path_ano_data, &ano_data_f32.to_string());
+        ano_data_f64 = convert_binary_in_u32(ano_data.clone(), l_2.try_into().unwrap()) as f64 
+        / 10f64.powi(pr as i32);
+        let valeur = format!("{:.1$}", ano_data_f64, pr as usize);
+        let _ = write_csv_file(&path_ano_data, column_index, row_index, &valeur);
     }
 	
     // Store the proof of opening with LDP	
@@ -168,102 +170,98 @@ pub fn hospital_opening_on_anonymized_data(name_data: &String, row_index: usize,
     
     let meta_popldp = fs::metadata(&path_proof_opening_ldp).expect("Error");
     let popldp_size = meta_popldp.len();
-    print!("The proof of opening with LPD is generated and stored ({} bytes).\n", popldp_size);
+    print!("The proof of opening with LDP is generated and stored ({} bytes).\n", popldp_size);
 }
 
 // Phase executed by the hospital to verify the used privacy budget, the proof of commitment, the signature and opening on the real data.
-pub fn hospital_phase(metadata: &Metadata, path_data: &String, folder_eps: &String, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_proof_commitment: &String, folder_proof_open: &String, folder_signature: &String, path_doctor_public_key: &PathBuf){
+pub fn hospital_phase(column_number: usize, row_number: usize, dataset_metadata: &Vec<Metadata>, path_data: &String, path_eps: &String, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_proof_commitment: &String, folder_proof_open: &String, folder_signature: &String, path_doctor_public_key: &PathBuf){
 
     let start_hosp_verification_phase = Instant::now();
 
-    // Parse metadata
-    let name_data = &metadata.name;
-    let column_index = metadata.col_index;
-    let number_row = metadata.nb_row;
-    let b = metadata.fl;
-    let p = metadata.pr;
+    for column_index in 0..column_number{
+        // Parse metadata
+        let name_data = dataset_metadata[column_index].type_data.clone();
+        let pr = dataset_metadata[column_index].precision.clone();
 	
-    let folder_eps_string = format!("{}/{}", folder_eps, name_data);
-    let folder_eps = Path::new(&folder_eps_string);
-    let folder_set_string = format!("{}/{}", folder_set, name_data);
-    let folder_set = Path::new(&folder_set_string);
-    let folder_opening_key_string = format!("{}/{}", folder_opening_key, name_data);
-    let folder_opening_key = Path::new(&folder_opening_key_string);
-    let folder_commitment_string = format!("{}/{}", folder_commitment, name_data);
-    let folder_commitment = Path::new(&folder_commitment_string);
-    let folder_proof_commitment_string = format!("{}/{}", folder_proof_commitment, name_data);
-    let folder_proof_commitment = Path::new(&folder_proof_commitment_string);
-    let folder_proof_open_string = format!("{}/{}", folder_proof_open, name_data);
-    let folder_proof_open = Path::new(&folder_proof_open_string);
-    let folder_signature_string = format!("{}/{}", folder_signature, name_data);
-    let folder_signature = Path::new(&folder_signature_string);
-    let _ = fs::create_dir_all(folder_proof_open);
+        let folder_set_string = format!("{}/{}", folder_set, name_data);
+        let folder_set = Path::new(&folder_set_string);
+        let folder_opening_key_string = format!("{}/{}", folder_opening_key, name_data);
+        let folder_opening_key = Path::new(&folder_opening_key_string);
+        let folder_commitment_string = format!("{}/{}", folder_commitment, name_data);
+        let folder_commitment = Path::new(&folder_commitment_string);
+        let folder_proof_commitment_string = format!("{}/{}", folder_proof_commitment, name_data);
+        let folder_proof_commitment = Path::new(&folder_proof_commitment_string);
+        let folder_proof_open_string = format!("{}/{}", folder_proof_open, name_data);
+        let folder_proof_open = Path::new(&folder_proof_open_string);
+        let folder_signature_string = format!("{}/{}", folder_signature, name_data);
+        let folder_signature = Path::new(&folder_signature_string);
+        let _ = fs::create_dir_all(folder_proof_open);
 	
-    for row_index in 1..=number_row{    
-        let path_eps = folder_eps.join(format!("eps_{}.txt", row_index)); 
-	let path_set = folder_set.join(format!("set_{}.txt", row_index)); 
-	let path_opening_key = folder_opening_key.join(format!("opening_key_{}.txt", row_index)); 
-	let path_commitment = folder_commitment.join(format!("commitment_{}.txt", row_index));
-	let path_proof_commitment = folder_proof_commitment.join(format!("proof_commitment_{}.txt", row_index));
-	let path_proof_open = folder_proof_open.join(format!("proof_opening_{}.txt", row_index));
-	let path_signature = folder_signature.join(format!("signature_{}.txt", row_index));
+        for row_index in 1..=row_number{     
+	        let path_set = folder_set.join(format!("set_{}.txt", row_index)); 
+	        let path_opening_key = folder_opening_key.join(format!("opening_key_{}.txt", row_index)); 
+	        let path_commitment = folder_commitment.join(format!("commitment_{}.txt", row_index));
+	        let path_proof_commitment = folder_proof_commitment.join(format!("proof_commitment_{}.txt", row_index));
+	        let path_proof_open = folder_proof_open.join(format!("proof_opening_{}.txt", row_index));
+	        let path_signature = folder_signature.join(format!("signature_{}.txt", row_index));
 		
-	// Verify the privacy budget is correct
-    	hospital_privacy_budget_verification(&name_data, row_index, &path_eps, &path_set);
+	        // Verify the privacy budget is correct
+    	    hospital_privacy_budget_verification(&name_data, column_index, row_index, &path_eps, &path_set);
     		
-	// Verify the proof of commitment
-	hospital_proof_commitment_verification(&path_set, &path_commitment, &path_proof_commitment);
+	        // Verify the proof of commitment
+	        hospital_proof_commitment_verification(&path_set, &path_commitment, &path_proof_commitment);
 		
-	// Verify the signature
-	hospital_signature_verification(&path_set, &path_commitment, &path_signature, &path_doctor_public_key);
+	        // Verify the signature
+	        hospital_signature_verification(&path_set, &path_commitment, &path_signature, &path_doctor_public_key);
 		
-        // Open the commitment on the original data
-	hospital_opening_on_original_data(&path_set, &path_opening_key, &path_commitment, &path_proof_open);
+            // Open the commitment on the original data
+	        hospital_opening_on_original_data(&path_set, &path_opening_key, &path_commitment, &path_proof_open);
 		
-	// Verify the proof of opening
-	hospital_verify_opening_on_original_data(column_index, row_index, b, p, &path_data, &path_set, &path_commitment, &path_proof_open);		
+	        // Verify the proof of opening
+	        hospital_verify_opening_on_original_data(column_index, row_index, pr, &path_data, &path_set, &path_commitment, &path_proof_open);
+        }		
     } 
     let duration_hosp_verification_phase = start_hosp_verification_phase.elapsed();
-    print!("Hospital Verification Phase took {:?} for {} data \n", duration_hosp_verification_phase, number_row);
+    print!("Hospital Verification Phase took {:?} for {} data \n", duration_hosp_verification_phase, row_number);
 }
 
 // Phase executed by the hospital to anonymize the data and generation of a proof of anonymization.
-pub fn hospital_anonymization(metadata: &Metadata, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_seed: &String, folder_proof_openldp: &String, path_ano_data: &String){
+pub fn hospital_anonymization(column_number: usize, row_number: usize, dataset_metadata: &Vec<Metadata>, folder_set: &String, folder_opening_key: &String, folder_commitment: &String, folder_seed: &String, folder_proof_openldp: &String, path_ano_data: &String){
 	
     let start_hosp_anonymization_phase = Instant::now();
+
+    let _= init_csv_file(column_number, row_number, dataset_metadata, path_ano_data);
 	
-    // Parse metadata
-    let name_data = &metadata.name;
-    let number_row = metadata.nb_row;
-    let b = metadata.fl;
-    let p = metadata.pr;
+    for column_index in 0..column_number{
+        // Parse metadata
+        let name_data = dataset_metadata[column_index].type_data.clone();
+        let pr = dataset_metadata[column_index].precision.clone();
 	
-    let folder_set_string = format!("{}/{}", folder_set, name_data);
-    let folder_set = Path::new(&folder_set_string);
-    let folder_opening_key_string = format!("{}/{}", folder_opening_key, name_data);
-    let folder_opening_key = Path::new(&folder_opening_key_string);
-    let folder_commitment_string = format!("{}/{}", folder_commitment, name_data);
-    let folder_commitment = Path::new(&folder_commitment_string);
-    let folder_seed_string = format!("{}/{}", folder_seed, name_data);
-    let folder_seed = Path::new(&folder_seed_string);
-    let folder_proof_openldp_string = format!("{}/{}", folder_proof_openldp, name_data);
-    let folder_proof_openldp = Path::new(&folder_proof_openldp_string);
-    let _ = fs::create_dir_all(folder_proof_openldp); // Create the folder of the proof of opening with LDP.
+        let folder_set_string = format!("{}/{}", folder_set, name_data);
+        let folder_set = Path::new(&folder_set_string);
+        let folder_opening_key_string = format!("{}/{}", folder_opening_key, name_data);
+        let folder_opening_key = Path::new(&folder_opening_key_string);
+        let folder_commitment_string = format!("{}/{}", folder_commitment, name_data);
+        let folder_commitment = Path::new(&folder_commitment_string);
+        let folder_seed_string = format!("{}/{}", folder_seed, name_data);
+        let folder_seed = Path::new(&folder_seed_string);
+        let folder_proof_openldp_string = format!("{}/{}", folder_proof_openldp, name_data);
+        let folder_proof_openldp = Path::new(&folder_proof_openldp_string);
+        let _ = fs::create_dir_all(folder_proof_openldp); // Create the folder of the proof of opening with LDP.
 	
-    let _= init_csv_file(name_data, path_ano_data);
-	
-    for row_index in 1..=number_row{
-	let path_set = folder_set.join(format!("set_{}.txt", row_index)); 
-	let path_opening_key = folder_opening_key.join(format!("opening_key_{}.txt", row_index)); 
-	let path_commitment = folder_commitment.join(format!("commitment_{}.txt", row_index));
-	let path_proof_openldp = folder_proof_openldp.join(format!("proof_opening_ldp_{}.txt", row_index));
+        for row_index in 1..=row_number{
+	       let path_set = folder_set.join(format!("set_{}.txt", row_index)); 
+	       let path_opening_key = folder_opening_key.join(format!("opening_key_{}.txt", row_index)); 
+	       let path_commitment = folder_commitment.join(format!("commitment_{}.txt", row_index));
+	       let path_proof_openldp = folder_proof_openldp.join(format!("proof_opening_ldp_{}.txt", row_index));
 		
-	// Collect the public seed sending by the researcher
-	let path_public_seed = folder_seed.join(format!("seed_{}.txt", row_index));
+	       // Collect the public seed sending by the researcher
+	       let path_public_seed = folder_seed.join(format!("seed_{}.txt", row_index));
 		
-	// Open the commitment on the anonymized data
-	hospital_opening_on_anonymized_data(name_data, row_index, b, p, &path_set, &path_opening_key, &path_commitment, &path_public_seed, &path_proof_openldp, &path_ano_data);	
+	       // Open the commitment on the anonymized data
+	       hospital_opening_on_anonymized_data(&name_data, column_index, row_index, pr, &path_set, &path_opening_key, &path_commitment, &path_public_seed, &path_proof_openldp, &path_ano_data);	
+        }
     }
     let duration_hosp_anonymization_phase = start_hosp_anonymization_phase.elapsed();
-    print!("Hospital Anonymization Phase took {:?} for {} data \n", duration_hosp_anonymization_phase, number_row);
+    print!("Hospital Anonymization Phase took {:?} for {} data \n", duration_hosp_anonymization_phase, row_number);
 }
