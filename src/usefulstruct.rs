@@ -1,13 +1,9 @@
 use curve25519_dalek::{scalar::Scalar, RistrettoPoint};
 
-//
 pub struct Metadata{ 
-    pub name: String, 
-    pub col_index: usize, 
-    pub nb_row: usize,
-    pub max_discret_data: u32, 
-    pub fl: bool, 
-    pub pr: u32,
+    pub type_data: String, 
+    pub col_index: usize,
+    pub precision: u32,
     pub l2: u32
 }
 
