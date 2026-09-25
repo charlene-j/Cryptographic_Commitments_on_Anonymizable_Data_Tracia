@@ -6,8 +6,8 @@ use curve25519_dalek::{scalar::Scalar, RistrettoPoint, ristretto::CompressedRist
 use crate::usefulfunction::*;
 use crate::usefulstruct::*;
 
-//Write a float in a file.
-pub fn store_float(float: f32, name_file: &PathBuf) -> std::io::Result<()>{
+/*//Write a float in a file.
+pub fn store_float(float: f64, name_file: &PathBuf) -> std::io::Result<()>{
     let mut file = File::options().write(true).truncate(true).create(true).open(name_file)?;
     file.write_all(&float.to_le_bytes())?;
     
@@ -15,15 +15,15 @@ pub fn store_float(float: f32, name_file: &PathBuf) -> std::io::Result<()>{
 }
 
 // Extract a float located in a file.
-pub fn extract_float(name_file: &PathBuf) -> f32{
+pub fn extract_float(name_file: &PathBuf) -> f64{
     let mut file = File::open(name_file).expect("Impossible to open the file");
 
-    let mut buffer = [0u8; std::mem::size_of::<f32>()];
+    let mut buffer = [0u8; std::mem::size_of::<f64>()];
 
     file.read_exact(&mut buffer).expect("Impossible to read the file");
 
-    return f32::from_le_bytes(buffer)
-}
+    return f64::from_le_bytes(buffer)
+}*/
 
 // Write a type Vec<usize> in a file.
 pub fn store_seed(vec_usize: Vec<Vec<usize>>, name_file: &PathBuf) -> io::Result<()>{
@@ -590,3 +590,4 @@ pub fn extract_sig(name_file: &PathBuf) -> Signature{
     let zz: Scalar = Scalar::from_bytes_mod_order(s[1]);
     return Signature{r: rr, z: zz};
 }
+
